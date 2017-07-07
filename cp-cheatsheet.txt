@@ -1,0 +1,273 @@
+checkpoint KB URL, short:
+-------------------------
+http://supportcontent.checkpoint.com/solutions?id=<sk-id>
+
+---
+
+Jumbo HF Identifier
+-------------------
+
+Identifier for take 198:
+"Check_Point_R77_30_JUMBO_HF_1_Bundle_T198_FULL.tgz"
+
+---
+
+
+Gaia First Time Wizard Cli:
+---------------------------
+
+config_system -t <file_name>
+vi <file_name>
+config_system -f <file_name>
+
+details see sk69701
+
+---
+
+export routes (SPLAT -> Gaia):
+ip route show | grep via | awk '{ print $1 " " $3 }'
+
+-> paste output to "Batch Import" in Gaia web interface
+
+---
+
+Gaia: set/show interface ring buffer
+------------------------------------
+set interface <Interface> rx-ringsize <Number>
+set interface <Interface> tx-ringsize <Number>
+
+show interface <Interface> rx-ringsize
+
+---
+
+informationen on interface bonds
+--------------------------------
+cat /proc/net/bonding/<bond-name>
+cphaconf show_bond <-a | bond-name>
+
+---
+
+interface migration SPLAT -> GAIA:
+----------------------------------
+ip addr show | grep inet | grep eth | awk '{ print $7 " " $2}' | sed 's/\// mask-length /' | sed 's/10\./ipv4-address 10\./' | sed 's/^/set interface /' | sort -n
+ip addr show | grep inet | grep eth | awk '{ print $7 }' | sed 's/^/set interface /' | sed 's/$/ state on/' | sort -n 
+ip addr show | grep inet | grep eth2. | awk '{ print $7 }' | sed 's/^/add interface /' | sed 's/\./ vlan /' | sort -n
+
+---
+
+SPLAT: configure SNMP:
+----------------------
+edit communities in /etc/snmp/snmpd.users.conf
+add trap receiver in /etc/snmp/snmpd.conf
+cp_conf snmp activate (attention: cpstop/cpstart)
+service snmpd start
+chkconfig snmpd on 
+snmpwalk -v 2c -c public 127.0.0.1 sysDescr.0
+snmpwalk -v 2c -c public 127.0.0.1 enterprises.2620.1.7.1.0
+
+---
+
+checkpoint gaia - increase disk space:
+--------------------------------------
+
+VMware:
+- increase disk size in vshpere client
+- login & expert mode
+- fdisk /dev/sda
+- delete and recreate partition /dev/sda3
+- set partition type to 0x8e ("t")
+- exit fdisk and reboot
+- login & expert mode
+- pvresize /dev/sda3
+- lvresize -L +[x]G /dev/vg_splat/lv_current
+- resize2fs -p /dev/mapper/vg_splat-lv_current
+- log file system is lv_log, procedure identical
+
+physical machine:
+- check unused disk space using pvdisplay/vgdisplay
+- increase disk space:
+  lvresize -L +[x]G /dev/vg_splat/lv_current
+  resize2fs -p /dev/mapper/vg_splat-lv_current
+- if no unused disk space available, additional disks 
+  may be added using lvm tools
+- decrease is not that easy but works sometimes
+- lvm best documented at
+  https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Logical_Volume_Manager_Administration/VG_admin.html
+
+---
+
+is this a 64 bit linux?
+-----------------------
+getconf LONG_BIT
+
+---
+
+how to find a suitable bind DN?
+-------------------------------
+
+- login to domain controller
+- command prompt
+- issue "dsquery user" or "dsquery user <search string>"
+- example: dsquery user *ad* lists all "administrator" users
+
+---
+
+Clear Connection Table
+----------------------
+
+CONNECTIONS:
+fw tab -t connections -s (for summary)
+fw tab -t connections -x (to clear)
+
+NAT:
+fw tab -t fwx_alloc -s (for summary)
+fw tab -t fwx_alloc -x (to clear)
+
+---
+
+switch cluster:
+---------------
+cphaprob -d faildev -s problem -t 0 register
+cphaprob -d faildev unregister
+
+or:
+
+clusterXL_admin down && clusterXL_admin up
+
+---
+
+CPU - NIC Handling:
+-------------------
+fw ctl affinity -l -v -r -a
+
+---
+
+check switchport without ping:
+------------------------------
+at tirewall:
+arping -q -c 1 -w 1 -U -I <interface> <interface-IP>
+at switch:
+sh mac address-table int <switchport>
+
+---
+
+Synchronisation manuell anstossen:
+----------------------------------
+fw ctl setsync off 
+fw fullsync xxx.xxx.xxx.xxx (Adresse des anderen Members)
+
+---
+
+pubkey auth at checkpoint firewalls:
+------------------------------------
+
+vi /etc/ssh/sshd_config
+
+change/insert:
+LogLevel VERBOSE
+ClientAliveInterval 300
+UseDNS no
+
+service sshd reload
+
+cd ~
+mkdir .ssh
+chmod 700 .ssh
+cd .ssh
+vi authorized_keys
+insert public key
+save & exit
+chmod 600 authorized_keys
+
+---
+
+changes to fwkern.conf:
+-----------------------
+
+vi $FWDIR/boot/modules/fwkern.conf
+
+fw_log_bufsize=327680
+fw_sync_recv_queue_size=0x400
+fw_sync_sending_queue_size=0x800
+fw_reject_non_syn=1
+fwlddist_buf_size=0x10000
+
+---
+
+check SNMP configuration:
+-------------------------
+
+cluster state:
+snmpwalk -v2c -c public 127.0.0.1 	
+
+installed ruleset:
+snmpwalk -v2c -c public 127.0.0.1 1.3.6.1.4.1.2620.1.1.2.0
+
+---
+
+LDAP search at firewall:
+----------------------------
+
+ldapsearch -b DC=<x>,DC=<y>,DC=<z> -s sub -D CN=<user cn> -w '<password>' -h <domain controller> CN=<search string>
+
+---
+
+identify NIC hardware/interrupt:
+--------------------------------
+
+input:  ethtool -i eth2
+output: [...] bus-info: 0000:05:00.0
+
+input:  lspci -vvv -s 0000:05:00.0
+output: hardware info incl. IRQ
+
+---
+
+radius auth in Gaia:
+--------------------
+
+freeradius:
+- copy dictionary to /etc/freeradius
+- /etc/freeradius/users:
+	cpadmin Cleartext-Password := "abc123"
+        CP-Gaia-User-Role = "adminRole", # CASE MATTERS!
+        CP-Gaia-SuperUser-Access = "0"
+- secret in clients.conf
+- sk72940
+
+---
+
+configure LOM interfaces at CLI:
+--------------------------------
+
+1. check at wich channel the IPMI interface is configured (shell script)
+
+<script>
+#!/bin/bash
+c=1
+while [ $c -le 10 ]
+  do
+    channels=`ipmitool lan print $c`
+    echo "Channel $c $channels"
+    (( c++ ))
+  done
+</script>
+
+--> LAN interface mostly at channel #1 (#8 on newer appliances)
+
+2. show configuration
+
+ipmitool lan print 1
+
+3. change configuration
+
+ipmitool lan set 1 ipsrc static
+ipmitool lan set 1 ipaddr <IP address> 
+ipmitool lan set 1 netmask <net mask> 
+ipmitool lan set 1 defgw ipaddr <default gateway>
+
+see sk93375
+
+show LOM version: ipmitool bmc info
+
+
