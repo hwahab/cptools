@@ -3,7 +3,7 @@
 # LOGWORK ORANGE - Disk Space Desaster Prevention
 # Delete Checkpoint firewall logfiles older than $RETIME days
 #
-# Michael Goessmann Matos, NTT Security
+# dj0Nz
 # June 2017
 
 # variables
