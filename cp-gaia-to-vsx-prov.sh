@@ -13,7 +13,7 @@
 # - cisco asa migration
 # 
 # version 2.0
-# mgo
+# dj0nz
 # june 30th 2017
 
 echo "gaia config to vs converter"
