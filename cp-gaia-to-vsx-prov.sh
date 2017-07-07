@@ -10,6 +10,7 @@
 # - input checking 
 # - virtual router handling
 # - topology input if autocalc set to false
+# - cisco asa migration
 # 
 # version 2.0
 # june 30th 2017
