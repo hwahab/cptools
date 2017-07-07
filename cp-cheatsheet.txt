@@ -151,10 +151,10 @@ sh mac address-table int <switchport>
 
 ---
 
-Synchronisation manuell anstossen:
-----------------------------------
+force session synchronisation:
+------------------------------
 fw ctl setsync off 
-fw fullsync xxx.xxx.xxx.xxx (Adresse des anderen Members)
+fw fullsync xxx.xxx.xxx.xxx (ip address of other member)
 
 ---
 
