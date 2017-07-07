@@ -4,7 +4,7 @@
 # Delete Checkpoint firewall logfiles older than $RETIME days
 #
 # Michael Goessmann Matos, NTT Security
-# April 2016
+# June 2017
 
 # variables
 ORANGE=/var/log/logwork.log
