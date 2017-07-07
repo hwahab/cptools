@@ -4,15 +4,6 @@ http://supportcontent.checkpoint.com/solutions?id=<sk-id>
 
 ---
 
-Jumbo HF Identifier
--------------------
-
-Identifier for take 198:
-"Check_Point_R77_30_JUMBO_HF_1_Bundle_T198_FULL.tgz"
-
----
-
-
 Gaia First Time Wizard Cli:
 ---------------------------
 
