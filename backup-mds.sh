@@ -1,12 +1,13 @@
 #!/bin/sh
 
-# MDS Backup 4.0
-# New in this version:
-# - improved command line arguments to reflect new version capabilities
-# - migrate export to backup management domains (instead of copying directories)
-# - place daily backup locally, retaining one month (1 backup per day-of-month)
-# - additional daily copy of backup files to scp server
-# - additional monthly (at 1st) copy of mds backup file to scp server
+# Checkpoint MDS Backup
+#
+# Purpose:
+# Backup a Checkpoint Multi Domain Management Server and all it's management domains both locally and to a backup server via scp
+# Backups are locally stored in a fs structure (directory name = day-of-month) below $BKP_DIR, remotely stored is an archive
+# containing all daily backups and, once a month (every 1st), a copy of the mds backup file.
+#
+# Licensed under GPLv3, see https://github.com/dj0nz/cptools for detailed information or current version
 # MGO / Sep 2017
 
 . /opt/CPshared/5.0/tmp/.CPprofile.sh
@@ -15,6 +16,7 @@ SERVER="REMOTE SERVER"
 USERNAME="REMOTE USER"
 DIRECTORY="REMOTE DIRECTORY"
 BKP_TMP=/var/log/tmp/backup
+BKP_DIR=/var/log/backup
 BKP_LOG=/var/log/backup.log
 BKP_DAY=`date +%d`
 BKP_MON=`date +%b`
@@ -51,9 +53,10 @@ if [ -f $MDS_TEMPLATE/bin/installed_jumbo_take ]; then
 else
 	echo "No jumbo hf installed or installed_jumbo_take binary not found!"  >> ver.txt
 fi
-/bin/clish -c "lock database override" >> $BKP_LOG 2>&1
-/bin/clish -c "show version all" >> ver.txt
-/bin/clish -c "save configuration $HOSTNAME-config" >> $BKP_LOG 2>&1
+clish -c "lock database override" >> $BKP_LOG 2>&1
+clish -c "show version all" >> ver.txt
+cpinfo -y all >> ver.txt
+clish -c "save configuration $HOSTNAME-config" >> $BKP_LOG 2>&1
 tar czf system.tgz ver.txt $HOSTNAME-config >> $BKP_LOG 2>&1
 rm ver.txt
 rm $HOSTNAME-config
@@ -72,16 +75,20 @@ tar cfz /var/log/tmp/daily-mds-backup.tgz $BKP_TMP/* >> $BKP_LOG 2>&1
 scp -q /var/log/tmp/daily-mds-backup.tgz $USERNAME@$SERVER:$DIRECTORY/ >> $BKP_LOG 2>&1
 rm /var/log/tmp/daily-mds-backup.tgz
 
+scp -q $BKP_TMP/gtar $USERNAME@$SERVER:$DIRECTORY/ >> $BKP_LOG 2>&1
+scp -q $BKP_TMP/gzip $USERNAME@$SERVER:$DIRECTORY/ >> $BKP_LOG 2>&1
+scp -q $BKP_TMP/mds_restore $USERNAME@$SERVER:$DIRECTORY/ >> $BKP_LOG 2>&1
+
 if [ "$BKP_DAY" == "1" ]; then
 	scp -q $BKP_TMP/*.mdsbk.tgz $USERNAME@$SERVER:$DIRECTORY/$BKP_MON.mdsbk.tgz >> $BKP_LOG 2>&1
 fi
 
-if [ ! -d /var/log/backup ]; then
-	mkdir /var/log/backup
+if [ ! -d $BKP_DIR ]; then
+	mkdir $BKP_DIR
 fi
-if [ ! -d /var/log/backup/$BKP_DAY ]; then
-	mkdir /var/log/backup/$BKP_DAY
+if [ ! -d $BKP_DIR/$BKP_DAY ]; then
+	mkdir $BKP_DIR/$BKP_DAY
 fi
-mv $BKP_TMP/* /var/log/backup/$BKP_DAY/
+mv $BKP_TMP/* $BKP_DIR/$BKP_DAY/
 
 echo "END of MDS Backup `\date`" >> $BKP_LOG
