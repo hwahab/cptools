@@ -1,15 +1,16 @@
 #!/bin/sh
 
-# Checkpoint MDS Backup
+# checkpoint mds backup
 #
-# Purpose:
-# Backup a Checkpoint Multi Domain Management Server and all it's management domains both locally and to a backup server via scp
-# Backups are locally stored in a fs structure (directory name = day-of-month) below $BKP_DIR, remotely stored is an archive
-# containing all daily backups and, once a month (every 1st), a copy of the mds backup file.
+# purpose and function:
+# backup a checkpoint multi domain management server and all it's management domains both locally 
+# and to a backup server via scp. backups are stored locally in a fs structure (directory name = day-of-month) 
+# below $BKP_DIR. remote backups consist of an archive containing all daily backups. 
+# once a month (every 1st), a copy of the mds backup file is additionally transferred to the backup server.
 #
-# Licensed under GPLv3, see https://github.com/dj0nz/cptools for detailed information or current version
-# dj0nz
-# Sep 28 2017
+# version 4
+# september 28 2017
+# mgo [djonz@posteo.de]
 
 . /opt/CPshared/5.0/tmp/.CPprofile.sh
 
