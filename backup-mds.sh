@@ -8,7 +8,8 @@
 # containing all daily backups and, once a month (every 1st), a copy of the mds backup file.
 #
 # Licensed under GPLv3, see https://github.com/dj0nz/cptools for detailed information or current version
-# MGO / Sep 2017
+# dj0nz
+# Sep 28 2017
 
 . /opt/CPshared/5.0/tmp/.CPprofile.sh
 
