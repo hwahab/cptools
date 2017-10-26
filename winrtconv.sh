@@ -3,9 +3,15 @@
 # windows to gaia static routes conversion
 #
 # export windows static routes with "route print > routes.txt"
-# eliminate all comments or other crap, only routing entries allowed
+# eliminate all comments and other crap, only routing entries
+# which look like the following example should be left in the file
+#
+# 10.10.1.0    255.255.240.0    192.168.48.1       1
+# 
 # also, check if there are broadcast, multicast and local routes
-# in input file and delete relevant line
+# in input file and delete relevant lines
+#
+# you may redirect output to file
 #
 # version 1.0
 # oct 26 2017
@@ -21,6 +27,9 @@ if [ ! -f "$1" ]; then
    exit 1
 fi
 
+dos2unix $1
+rt="$1"
+
 # function to convert subnet mask to mask bits 
 # source: https://forums.gentoo.org/viewtopic-t-888736-start-0.html
 # i really like code that looks like ascii dreadlocks...
@@ -32,11 +41,10 @@ mask2cdr ()
    echo $(( $2 + (${#x}/4) ))
 }
 
-dos2unix $1
-rt="$1"
-
 while read -r line
 do
 line1=($line)
 echo "${line1[0]}/$(mask2cdr ${line1[1]}) ${line1[2]}"
 done < $rt
+
+# fin
