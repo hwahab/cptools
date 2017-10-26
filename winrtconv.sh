@@ -7,23 +7,23 @@
 # also, check if there are broadcast, multicast and local routes
 # in input file and delete relevant line
 #
-# function mask2cdr found at stackoverflow...
-#
 # version 1.0
 # oct 26 2017
 # mgo [djonz@posteo.de]
 
-# check input parameters
+# very basic input parameter checking
 if [ "$1" == "" ]; then
-echo "no input file specified. exiting."
-exit 1
+   echo "no input file specified. exiting."
+   exit 1
 fi
 if [ ! -f "$1" ]; then
-echo "input file not found. exiting."
-exit 1
+   echo "input file not found. exiting."
+   exit 1
 fi
 
-# function to convert subnet mask to mask bits
+# function to convert subnet mask to mask bits 
+# source: https://forums.gentoo.org/viewtopic-t-888736-start-0.html
+# i really like code that looks like ascii dreadlocks...
 mask2cdr ()
 {
    local x=${1##*255.}
