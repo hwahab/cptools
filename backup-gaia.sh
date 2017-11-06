@@ -1,18 +1,19 @@
 #!/bin/sh
 
-# Checkpoint GAIA Backup Skript
-# Sichert Konfiguration und weitere wichtige Files (fwkern.conf etc.)
+# checkpoint gaia backup
 #
-# Michael Goessmann Matos, NTT Com Security
-# Januar 2016
+# do a regular gaia backup and store additional info
+# which could be helpful in case of complete system failure
+#
+# MGO / Oct 2017
 
-# Checkpoint Version ermitteln
+# determine checkpoint version
 CPVER=`rpm -qa | grep CPsuite | awk -F'-' '{print $2}'`
 
-# Checkpoint Enviroment-Variablen laden
-. /opt/CPshrd-$CPVER/tmp/.CPprofile.sh
+# load checkpoint environment
+. /opt/CPshared/5.0/tmp/.CPprofile.sh
 
-# Sonstige Variablen definieren
+# variables
 SERVER=<BACKUP-SERVER>
 USERNAME=<USER>
 DIRECTORY=/backup
@@ -23,7 +24,7 @@ SMC_STATE=`/opt/CPshrd-$CPVER/bin/cpstat mg | grep ^Status | awk '{ print $2 }'`
 SMC_LOCK=`/opt/CPshrd-$CPVER/bin/cpstat mg | grep true | awk -F "|" '{ print $5 }'`
 SMC_CHECK=`/opt/CPshrd-$CPVER/bin/cpstat fw | grep ^Policy | awk '{ print $3 }'`
 
-# Ein sauberes Logfile erzeugen
+# create a clean log file
 if [ -f $BKP_LOG ];
 then
         if [ -f $BKP_LOG.2 ]; then
@@ -42,7 +43,7 @@ else
         touch $BKP_LOG
 fi
 
-# Ist dies ein Management Server? Wenn ja, dann Sicherung taeglich.
+# is this a management server?
 if [ $SMC_CHECK == "-" ]; then
    IS_SMC="True"
    BKP_DAY=`date +%d`
@@ -51,22 +52,22 @@ else
    BKP_DAY=`date +%W`
 fi
 
-# Timestamp: Beginn der Datensicherung
+# timestamp: backup begin
 echo "---------------------------------------------------------" >> $BKP_LOG 2>&1
 echo "Backup START `\date`" >> $BKP_LOG 2>&1
 
-# Ein sauberes Log Temporaeres Verzeichnis erzeugen
+# create clean temporary directory
 if [ -d $TMPDIRECTORY ]; then
    rm -r $TMPDIRECTORY >> $BKP_LOG 2>&1
 fi
 mkdir $TMPDIRECTORY >> $BKP_LOG 2>&1
 cd $TMPDIRECTORY >> $BKP_LOG 2>&1
 
-# Versionsinformationen sichern
+# store version information
 if [ "$IS_SMC" == "True" ]; then
-   /opt/CPsuite-$CPVER/fw1/bin/fwm ver -f ver.txt
+   $FWDIR/bin/fwm ver -f ver.txt
 else
-   /opt/CPsuite-$CPVER/fw1/bin/fw ver -k -f ver.txt
+   $FWDIR/bin/fw ver -k -f ver.txt
 fi
 if [ -f $FWDIR/bin/installed_jumbo_take ]; then
    $FWDIR/bin/installed_jumbo_take >> ver.txt
@@ -75,13 +76,14 @@ fi
 /bin/clish -c "lock database override" >> $BKP_LOG 2>&1
 /bin/clish -c "show version all" >> ver.txt
 /bin/clish -c "show asset all" >> ver.txt
+cpinfo -y all -i >> ver.txt 2>&1
 
-# Systemspezifische Dinge sichern. Nicht zwingend notwendig, aber man weiss ja nie...
+# system specific. maybe useful...
 tar cvPf sys.tar /etc >> $BKP_LOG 2>&1
 tar rvfP sys.tar /home/admin >> $BKP_LOG 2>&1
 tar rvfP sys.tar /root >> $BKP_LOG 2>&1
 
-# Produktspezifische Konfigurationen sichern
+# product specific. maybe useful.
 if [ -f /var/opt/fw.boot/modules/fwkern.conf ]; then
    tar rvPf sys.tar /var/opt/fw.boot/modules/fwkern.conf >> $BKP_LOG 2>&1
 fi
@@ -95,19 +97,19 @@ if [ -f /config/db/initial ]; then
    tar rvPf sys.tar /config/db/initial >> $BKP_LOG 2>&1
 fi
 
-# Konfigurationssicherung
+# gaia config backup
 /bin/clish -c "save configuration $HOSTNAME-config" >> $BKP_LOG 2>&1
 
-# Checkpoint Backup File erstellen
+# checkpoint system and product backup
 printf "y \n" | /bin/backup -f $HOSTNAME-cpbackup >> $BKP_LOG 2>&1
 
-# Und wo hat er's hingeschrieben?
+# check where to find the backup file. maybe not necessary any more...
 BACKUP_FILE=`find /var -type f -name $HOSTNAME-cpbackup.tgz`
 if [ -f $BACKUP_FILE ]; then
    mv $BACKUP_FILE $TMPDIRECTORY/ >> $BKP_LOG 2>&1
 fi
 
-# Export erstellen, wenn dies ein Smartcenter ist
+# create export file if thi sis a management server
 if [ "$IS_SMC" == "True" ]; then
    echo "Dies ist ein Management Server" >> $BKP_LOG 2>&1
    if [ "$SMC_STATE" == "OK" ]; then
@@ -122,27 +124,16 @@ if [ "$IS_SMC" == "True" ]; then
    fi
 fi
 
-# Alles schoen verpacken...
+# packaging...
 tar cvf $HOSTNAME-$BKP_DAY.tar ver.txt sys.tar $HOSTNAME-config $HOSTNAME-cpbackup.tgz >> $BKP_LOG 2>&1
 if [ -f $HOSTNAME-export.tgz ]; then
    tar rvf $HOSTNAME-$BKP_DAY.tar $HOSTNAME-export.tgz >> $BKP_LOG 2>&1
 fi
 md5sum $HOSTNAME-$BKP_DAY.tar > $HOSTNAME-$BKP_DAY.md5
 
-# ...und auf den Backup Server schaufeln
+# ...and upload
 scp -q $TMPDIRECTORY/$HOSTNAME-$BKP_DAY.tar $USERNAME@$SERVER:$DIRECTORY/$HOSTNAME/$HOSTNAME-$BKP_DAY.tar >> $BKP_LOG 2>&1
 scp -q $TMPDIRECTORY/$HOSTNAME-$BKP_DAY.md5 $USERNAME@$SERVER:$DIRECTORY/$HOSTNAME/$HOSTNAME-$BKP_DAY.md5 >> $BKP_LOG 2>&1
-
-# Aufraeumen
-rm $TMPDIRECTORY/$HOSTNAME-$BKP_DAY.tar
-rm $TMPDIRECTORY/$HOSTNAME-$BKP_DAY.md5
-rm $TMPDIRECTORY/ver.txt
-rm $TMPDIRECTORY/sys.tar
-rm $TMPDIRECTORY/$HOSTNAME-config
-rm $TMPDIRECTORY/$HOSTNAME-cpbackup.tgz
-if [ -f $TMPDIRECTORY/$HOSTNAME-export.tgz ]; then
-   rm $TMPDIRECTORY/$HOSTNAME-export.tgz
-fi
 
 echo "---------------------------------------------------------" >> $BKP_LOG 2>&1
 echo "Backup END `\date`" >> $BKP_LOG 2>&1
