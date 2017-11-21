@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# gaia config to vsx provisioning conversion
+# gaia config to vsx provisioning conversion script
 #
 # export gaia config with show configuration or save config <file>
 # needs vsx provisioning tool on management server for vs creation
