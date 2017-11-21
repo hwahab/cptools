@@ -1,5 +1,5 @@
 # Windows Powershell Script for backing up a PAN firewall cluster
-# cURL binary needed. Alternatively (with Powershell 3), the invoke-webrequest method amy be used.
+# cURL binary needed. Alternatively (with Powershell 3), the invoke-webrequest method may be used.
 #
 # Backup using Unix/Linux intentionally not mentioned here (too easy)... 
 #
