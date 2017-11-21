@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# LOGWORK ORANGE - Disk Space Desaster Prevention
-# Delete Checkpoint firewall logfiles older than $RETIME days
+# LOGWORK ORANGE - disk space desaster prevention
+# Delete Checkpoint firewall logfiles older than $RETIME days on SmartCenter
 #
 # dj0Nz
 # June 2017
