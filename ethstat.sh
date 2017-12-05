@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # quick check eth link
-# Michael Goessmann Matos, NTT Com Security
+# mgo 2017
 
 #ETH_LIST=`ifconfig -a | grep eth | cut -f 1 -d " " | grep -v '\.' | tr '\n' ' '`
 ETH_LIST=`ifconfig -a | egrep -i 'eth|mgmt|sync' | grep -v bond | cut -f 1 -d " " | grep -v '\.' | tr '\n' ' '`
