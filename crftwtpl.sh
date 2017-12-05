@@ -42,6 +42,9 @@ else
 fi
 
 # create input file
+if [ ! -d $TMPDIRECTORY ]; then
+   mkdir $TMPDIRECTORY
+fi
 cd $TMPDIRECTORY
 config_system -t $HOSTNAME.input
 sed -i 's/#.*$//;/^$/d' $HOSTNAME.input
